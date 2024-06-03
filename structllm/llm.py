@@ -1,4 +1,4 @@
-import openai 
+import openai
 import time
 import requests
 from openai import OpenAI
@@ -13,11 +13,11 @@ class gpt(object):
 
         os.environ["OPENAI_BASE_URL"] = args.openai_url
         os.environ["OPENAI_API_KEY"] = OpenAI.api_key
-        
+
         self.client = OpenAI(base_url=self.url, api_key=OpenAI.api_key)
-    
+
     def get_response(self, prompt, flag=0, num=1):
-        if self.model=="text-davinci-003" or type(prompt)==str:
+        if self.model == "text-davinci-003" or type(prompt) == str:
             print("text-davinci-003")
             response = OpenAI.Completion.create(
                 engine="text-davinci-003",
@@ -33,7 +33,7 @@ class gpt(object):
                 best_of=1,
             )
             return response["choices"][0]['text']
-        
+
         else:
             start_time = time.time()
             while True:
@@ -44,14 +44,13 @@ class gpt(object):
                     response = self.client.chat.completions.create(
                         model=self.model,
                         messages=prompt,
-                        temperature=1, #1
+                        temperature=1,  # 1
                         max_tokens=256,
                         top_p=1,
                         frequency_penalty=0,
                         presence_penalty=0,
                         n=num
                     )
-
 
                     # response = openai.ChatCompletion.create(
                     #     # model="gpt-3.5-turbo-0613",
@@ -68,7 +67,7 @@ class gpt(object):
                         return response.choices[0].message.content
                     else:
                         return response.choices
-                
+
                 except requests.exceptions.RequestException as e:
                     # 如果发生网络异常，等待10秒后重试
                     print(f"Network error: {e}")
@@ -100,16 +99,16 @@ class gpt(object):
                     print(f"Code execution exceeded 5 minutes: {e}")
                     # Optionally, you can re-raise the exception to terminate the script
                     raise e
-                
+
                 # except OpenAI.ServiceUnavailableError:
                 #     print('OpenAI.error.ServiceUnavailableError\nRetrying...')
                 #     time.sleep(20)
-                    
+
                 # except OpenAI.OpenAIError as e:
                 #     # 捕获并处理OpenAI API异常
                 #     if "maximum context length" in str(e):
                 #         raise ValueError(e)
-                    
+
                 #     print(f"An OpenAI API error occurred: {e}")
                 #     print("Retrying in 10 seconds...")
                 #     time.sleep(10)

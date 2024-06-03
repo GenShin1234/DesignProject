@@ -19,6 +19,7 @@ import fnmatch
 Embeddable = Union[Documents, Images]
 D = TypeVar("D", bound=Embeddable, contravariant=True)
 
+
 @retry(wait=wait_random_exponential(min=2, max=10), stop=stop_after_attempt(6))
 def get_embedding_openai(text, model="text-embedding-ada-002") -> List[float]:
     client = OpenAI(base_url=os.environ["OPENAI_BASE_URL"], api_key=os.environ["OPENAI_API_KEY"])
@@ -55,6 +56,7 @@ def get_embedding_openai(text, model="text-embedding-ada-002") -> List[float]:
                     raise
         return result
 
+
 class NewEmbeddingFunction(EmbeddingFunction):
     def __init__(self, encoder) -> None:
         super().__init__()
@@ -67,15 +69,15 @@ class NewEmbeddingFunction(EmbeddingFunction):
 
 class EncoderAda002:
     def encode(
-        self,
-        text: List[str],
-        batch_size: int = 16,
-        show_progress_bar: bool = False,
-        **kwargs
+            self,
+            text: List[str],
+            batch_size: int = 16,
+            show_progress_bar: bool = False,
+            **kwargs
     ) -> List[Tensor]:
         text_embeddings = []
         for batch_start in trange(
-            0, len(text), batch_size, disable=not show_progress_bar
+                0, len(text), batch_size, disable=not show_progress_bar
         ):
             batch_end = batch_start + batch_size
             batch_text = text[batch_start:batch_end]
@@ -84,7 +86,7 @@ class EncoderAda002:
             resp = get_embedding_openai(batch_text)
             for i, be in enumerate(resp.data):
                 assert (
-                    i == be.index
+                        i == be.index
                 )  # double check embeddings are in same order as input
             batch_text_embeddings = [e.embedding for e in resp.data]
             text_embeddings.extend(batch_text_embeddings)
@@ -98,7 +100,7 @@ class OpenaiAda002:
         self.doc_model = self.q_model
 
     def encode(
-        self, queries: List[str], batch_size: int = 16, **kwargs
+            self, queries: List[str], batch_size: int = 16, **kwargs
     ) -> List[Tensor]:
         return self.q_model.encode(queries, batch_size=batch_size, **kwargs)
 
@@ -110,7 +112,7 @@ class Encoder:
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         # cuda_device = os.environ.get('CUDA_VISIBLE_DEVICES', '0')
         # self.device = f"cuda:{cuda_device}" if torch.cuda.is_available() else "cpu"
-        
+
         if encoder_name == "text-embedding-ada-002":
             self.encoder = OpenaiAda002()
             self.ef = embedding_functions.OpenAIEmbeddingFunction(
@@ -122,10 +124,10 @@ class Encoder:
 
 
 def _get_embedding_and_save_to_chroma(
-    data: List[Dict[str, str]],
-    collection: Collection,
-    encoder: Encoder,
-    batch_size: int = 64,
+        data: List[Dict[str, str]],
+        collection: Collection,
+        encoder: Encoder,
+        batch_size: int = 64,
 ):
     encoder_ = encoder.encoder
 
@@ -143,8 +145,8 @@ def _get_embedding_and_save_to_chroma(
     if len(embeddings) > 20000:
         for i in range(0, len(embeddings), 20000):
             collection.add(
-                embeddings=embeddings[i : i + 20000],
-                documents=docs[i : i + 20000],
+                embeddings=embeddings[i: i + 20000],
+                documents=docs[i: i + 20000],
                 metadatas=[
                     {key: data[i][key] for key in meta_keys}
                     for i in range(i, min(len(embeddings), i + 20000))
@@ -162,6 +164,7 @@ def _get_embedding_and_save_to_chroma(
         )
     return collection
 
+
 def get_embedding_align(dataset_path: str, retriever: str, chroma_dir: str, name: str = None):
     dataset_name = "ccks"
     chroma_path = os.path.join(chroma_dir, retriever, dataset_name)
@@ -169,7 +172,7 @@ def get_embedding_align(dataset_path: str, retriever: str, chroma_dir: str, name
     encoder = Encoder(retriever)
     if name == None:
         name = "main"
-    
+
     embedding_function = encoder.ef
     chroma_client = chromadb.PersistentClient(path=chroma_path)
     collection = chroma_client.create_collection(
@@ -180,18 +183,17 @@ def get_embedding_align(dataset_path: str, retriever: str, chroma_dir: str, name
     )
     if not collection.count():
         retrieve_data = []
-        with open(dataset_path, 'r', )as f:
-            for idx, line in enumerate(f.readlines()):                        
+        with open(dataset_path, 'r', ) as f:
+            for idx, line in enumerate(f.readlines()):
                 elements = line.strip().split('\t')
                 h, r, t = elements
                 data_relation = {
                     "question": r,
                     "type": "relation"
                 }
-                if(data_relation in retrieve_data): continue
+                if (data_relation in retrieve_data): continue
                 retrieve_data.append(data_relation)
 
         _get_embedding_and_save_to_chroma(retrieve_data, collection, encoder)
-
 
     return collection

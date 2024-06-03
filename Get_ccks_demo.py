@@ -8,6 +8,7 @@ from collections import defaultdict
 import structllm as sllm
 import CGdata_for_ccks
 
+
 # 示例数据，模拟包含 1000 条自然语言问题的数据集
 def kmeans_clustering():
     with open('dataset/CCKS_round1/train_qa.json', 'r', encoding='utf-8') as f:
@@ -43,7 +44,7 @@ def kmeans_clustering():
 
     # 打印代表性问题
     for i, question in enumerate(representative_questions):
-        print(f"代表性问题 {i+1}: {question}")
+        print(f"代表性问题 {i + 1}: {question}")
 
     # 代表性问题 1: 陈望道的学生中，有多少人的毕业院校是广西师范大学？
     # 代表性问题 2: 黄晓君和罗文裕共同创作过的音乐作品有哪些？
@@ -54,10 +55,11 @@ def kmeans_clustering():
     # 代表性问题 7: 李建复的音乐作品中，有几首是他的代表作品？
     # 代表性问题 8: 参演过顶楼的演员中，有哪些人的代表作品是熔炉？
 
+
 if __name__ == '__main__':
     # Step1: 选择代表性问题
     # kmeans_clustering()
-    
+
     args = CGdata_for_ccks.parse_args()
 
     args.folder_path = 'dataset/CCKS_round1/kg(utf8).txt'
@@ -88,7 +90,6 @@ if __name__ == '__main__':
     res = KG_data['main'].excute_query(args, text_queries)
     print(f'{question}\t a={res}\n')
 
-
     question = "黄晓君和罗文裕共同创作过的音乐作品有哪些？"
     label = ["0"]
     # Step1: 找到黄晓君的音乐作品
@@ -105,7 +106,7 @@ if __name__ == '__main__':
     print(f'{question}\t a={res[0]}\n')
 
     question = "胡淑仪的儿子是谁？"
-    label = ["司马朱生","司马郁"]
+    label = ["司马朱生", "司马郁"]
     # Step1: 找到胡淑仪的儿子
     # Query1: get_information(relation="儿子", head_entity="胡淑仪")
     query1 = f"get_information(relation={node2id['儿子']}, head_entity={node2id['胡淑仪']})"
@@ -169,7 +170,6 @@ if __name__ == '__main__':
     text_queries = [query1, query2, query3, query4]
     res = KG_data['main'].excute_query(args, text_queries)
     print(f'{question}\t a={res}\n')
-
 
     question = "参演过顶楼的演员中，有哪些人的代表作品是熔炉？"
     label = ["金贤秀"]

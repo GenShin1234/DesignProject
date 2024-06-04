@@ -143,8 +143,8 @@ def parse_args():
     # output
     parser.add_argument('--store_error', action="store_true", default=True)
     parser.add_argument('--error_file_path', default="timeout_file.txt", type=str)
-    parser.add_argument('--output_detail_path', default="output/ccks_round1/all_detail.txt", type=str)
-    parser.add_argument('--output_result_path', default="output/ccks_round1/all_result.txt", type=str)
+    parser.add_argument('--output_detail_path', default="output/ccks_round1/all_detail", type=str)
+    parser.add_argument('--output_result_path', default="output/ccks_round1/all_result", type=str)
 
     # setting for dynamic prompt
     parser.add_argument('--retriever', default=None, type=str, help='The retriever used for few-shot retrieval')
@@ -194,5 +194,3 @@ if __name__ == "__main__":
         p.close()
         p.join()
         print("All of the child processes over!")
-
-

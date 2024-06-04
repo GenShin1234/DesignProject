@@ -9,7 +9,7 @@ CUDA_VISIBLE_DEVICES=$GPU python CGdata_for_ccks.py \
 --data_path dataset/CCKS_round1/test_qa.json \
 --prompt_path structllm/prompt_/ccks_round1.json \
 --SC_Num 5 \
---model gpt-3.5-turbo-0613 \
+--model gpt-3.5-turbo-16k \
 --output_detail_path $OUTPUTPATH/output_detail \
 --output_result_path $OUTPUTPATH/output_result \
 --debug 0 \

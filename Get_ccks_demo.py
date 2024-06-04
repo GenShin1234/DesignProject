@@ -58,7 +58,7 @@ def kmeans_clustering():
 
 if __name__ == '__main__':
     # Step1: 选择代表性问题
-    # kmeans_clustering()
+    kmeans_clustering()
 
     args = CGdata_for_ccks.parse_args()
 

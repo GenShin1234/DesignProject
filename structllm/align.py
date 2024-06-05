@@ -2,7 +2,7 @@ import re
 import structllm as sllm
 import random
 import ast
-from sentence_transformers import SentenceTransformer,util
+from sentence_transformers import SentenceTransformer, util
 import pandas as pd
 import numpy as np
 import torch
@@ -12,12 +12,14 @@ from openai import OpenAI
 import openai
 import time
 
+
 class M3ERetriever:
-    def __init__(self,corpus) -> None:
+    def __init__(self, corpus) -> None:
         # self.retrieve_model = SentenceTransformer('moka-ai/m3e-base')
-        self.retrieve_model = SentenceTransformer('BAAI/bge-large-zh',cache_folder='./create_data/retrieve_model')
+        self.retrieve_model = SentenceTransformer('BAAI/bge-large-zh', cache_folder='./create_data/retrieve_model')
         self.corpus = corpus
-    def get_topk_candidates(self,topk,query):
+
+    def get_topk_candidates(self, topk, query):
         # query is a list
 
         # Corpus of documents and their embeddings
@@ -29,12 +31,12 @@ class M3ERetriever:
         # hits = util.semantic_search(queries_embeddings, corpus_embeddings, top_k=topk)
         all_query_candidate_api_index = []
         for i in range(len(cos_scores)):
-            hits = torch.argsort(cos_scores[i],descending=True)[:topk]
+            hits = torch.argsort(cos_scores[i], descending=True)[:topk]
             all_query_candidate_api_index.append(hits.tolist())
         return all_query_candidate_api_index
-    
-    def count_accuracy(self,label,candidate):
-        assert len(label)==len(candidate)
+
+    def count_accuracy(self, label, candidate):
+        assert len(label) == len(candidate)
 
         topk_count = 0
         # hit = [0]*30
@@ -44,12 +46,13 @@ class M3ERetriever:
             if label[i] in candidate[i]:
                 topk_count += 1
                 # hit[label[i]] += 1
-        accuracy = topk_count/len(label)
+        accuracy = topk_count / len(label)
         return accuracy
-    
+
+
 class SentenceBertRetriever:
-    def __init__(self,corpus) -> None:
-        
+    def __init__(self, corpus) -> None:
+
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         # cuda_device = os.environ.get('CUDA_VISIBLE_DEVICES', '0')
         # self.device = f"cuda:{cuda_device}" if torch.cuda.is_available() else "cpu"
@@ -59,9 +62,10 @@ class SentenceBertRetriever:
             'msmarco-distilbert-base-tas-b',
             device=self.device
         )
-        
+
         self.corpus = corpus
-    def get_topk_candidates(self,topk,query):
+
+    def get_topk_candidates(self, topk, query):
         # query is a list
 
         # Corpus of documents and their embeddings
@@ -73,12 +77,12 @@ class SentenceBertRetriever:
         # hits = util.semantic_search(queries_embeddings, corpus_embeddings, top_k=topk)
         all_query_candidate_api_index = []
         for i in range(len(cos_scores)):
-            hits = torch.argsort(cos_scores[i],descending=True)[:topk]
+            hits = torch.argsort(cos_scores[i], descending=True)[:topk]
             all_query_candidate_api_index.append(hits.tolist())
         return all_query_candidate_api_index
-    
-    def count_accuracy(self,label,candidate):
-        assert len(label)==len(candidate)
+
+    def count_accuracy(self, label, candidate):
+        assert len(label) == len(candidate)
 
         topk_count = 0
         # hit = [0]*30
@@ -88,15 +92,16 @@ class SentenceBertRetriever:
             if label[i] in candidate[i]:
                 topk_count += 1
                 # hit[label[i]] += 1
-        accuracy = topk_count/len(label)
+        accuracy = topk_count / len(label)
         return accuracy
 
+
 class OpenAIRetriever:
-    def __init__(self,corpus) -> None:
+    def __init__(self, corpus) -> None:
         self.corpus = corpus
 
         self.url = os.environ.get("OPENAI_BASE_URL")
-        api_key=os.environ["OPENAI_API_KEY"]
+        api_key = os.environ["OPENAI_API_KEY"]
         self.client = OpenAI(base_url=self.url, api_key=api_key)
 
     def get_embedding(self, text, model="text-embedding-ada-002"):
@@ -106,7 +111,7 @@ class OpenAIRetriever:
         for i in range(max_retries):
             try:
                 # 尝试执行可能会引发错误的代码
-                result = self.client.embeddings.create(input = text, model=model).data
+                result = self.client.embeddings.create(input=text, model=model).data
                 # 如果代码成功执行，那么跳出循环
                 break
             except openai.APIConnectionError as e:
@@ -116,9 +121,9 @@ class OpenAIRetriever:
                     continue
                 else:  # 如果是最后一次重试，那么重新引发错误
                     raise
-        
+
         return result
-    
+
     def get_topk_candidates(self, topk, query):
         # query is a list
 
@@ -138,11 +143,12 @@ class OpenAIRetriever:
         # hits = util.semantic_search(queries_embeddings, corpus_embeddings, top_k=topk)
         all_query_candidate_api_index = []
         for i in range(len(cos_scores)):
-            hits = torch.argsort(cos_scores[i],descending=True)[:topk]
+            hits = torch.argsort(cos_scores[i], descending=True)[:topk]
             all_query_candidate_api_index.append(hits.tolist())
         return all_query_candidate_api_index
-    def count_accuracy(self,label,candidate):
-        assert len(label)==len(candidate)
+
+    def count_accuracy(self, label, candidate):
+        assert len(label) == len(candidate)
 
         topk_count = 0
         # hit = [0]*30
@@ -152,9 +158,10 @@ class OpenAIRetriever:
             if label[i] in candidate[i]:
                 topk_count += 1
                 # hit[label[i]] += 1
-        accuracy = topk_count/len(label)
+        accuracy = topk_count / len(label)
 
         return accuracy
+
 
 def GetRetriever(args, corpus):
     if args.retriever_align == "text-embedding-ada-002":
@@ -177,7 +184,7 @@ def get_target_type(args, response, cgdata):
         _, CG_relations = get_entitise_relations(cgdata)
         retriever = GetRetriever(args, CG_relations)
         # retriever = OpenAIRetriever(CG_relations)
-        top1_api = retriever.get_topk_candidates(1,result)
+        top1_api = retriever.get_topk_candidates(1, result)
         label_rel = [CG_relations[char[0]] for char in top1_api]
         # print(top1_api)
         # print(label_rel)
@@ -186,33 +193,35 @@ def get_target_type(args, response, cgdata):
         label_rel = None
     return top1_api, label_rel
 
+
 def update_head_entity(args, head_entity, CG_relations):
     retriever = GetRetriever(args, CG_relations)
     # retriever = OpenAIRetriever(CG_relations)
-    top5_api = retriever.get_topk_candidates(5,head_entity)
+    top5_api = retriever.get_topk_candidates(5, head_entity)
     label_rel = [CG_relations[char] for char in top5_api[0]]
     retrieve_prompt = sllm.prompt.retrieve_prompt(head_entity, label_rel, CG_relations)
     llm = sllm.llm.gpt(args)
     response = llm.get_response(retrieve_prompt.naive_prompt)
     # cleaned_string = response.lstrip().replace("'", "") # 删除所有单引号'和前置空格
     # cleaned_string = response.strip().replace("'", "").replace('"', "")
-    res = label_rel[0] # 默认为第一个
-    for relation in CG_relations: # 寻找lable relation
+    res = label_rel[0]  # 默认为第一个
+    for relation in CG_relations:  # 寻找lable relation
         if response.find(relation) != -1:
             res = relation
             break
-    return "key='"+res+"', value"
+    return "key='" + res + "', value"
+
 
 def text2query(args, text, question, cgdata):
     """translate text into formal queries
     output: query class
     """
     pattern_step = r"(Step.*)"
-    step_text = re.findall(pattern_step, text) # 得到list形式的query
+    step_text = re.findall(pattern_step, text)  # 得到list形式的query
     print(f"step_text:{step_text}")
 
     pattern_query = r'Query\d+\s*:\s*"(.*?)"'
-    text = re.findall(pattern_query, text) # 得到list形式的query
+    text = re.findall(pattern_query, text)  # 得到list形式的query
     print(f"text:{text}")
 
     CG_entities, CG_relations = get_entitise_relations(cgdata)
@@ -221,12 +230,12 @@ def text2query(args, text, question, cgdata):
     if text[0].find("head_entity") != -1:
         head_entity = re.findall(r'head_entity=\'([^"]*)\'', text[0])
         text[0] = text[0].replace("head_entity", update_head_entity(args, head_entity[0], CG_relations))
-    
+
     # update relation with GPT
     # text = get_relation_alignment(args, text, question, CG_relations)
     # print(text)
-    
-    Re_entities, Re_relations = get_parameters(text) #参数提取
+
+    Re_entities, Re_relations = get_parameters(text)  # 参数提取
     print(f"Re_entities:{Re_entities}")
     print(f"Re_relations:{Re_relations}")
     # retrieve entities
@@ -235,20 +244,21 @@ def text2query(args, text, question, cgdata):
     else:
         # retriever = OpenAIRetriever(CG_entities)
         retriever = GetRetriever(args, CG_entities)
-        top1_api = retriever.get_topk_candidates(1,Re_entities)
+        top1_api = retriever.get_topk_candidates(1, Re_entities)
         label_ent = [CG_entities[char[0]] for char in top1_api]
-    
+
     # retrieve relations
     if Re_relations == []:
         label_rel = []
     else:
         # retriever = OpenAIRetriever(CG_relations)
         retriever = GetRetriever(args, CG_relations)
-        top1_api = retriever.get_topk_candidates(1,Re_relations)
+        top1_api = retriever.get_topk_candidates(1, Re_relations)
         label_rel = [CG_relations[char[0]] for char in top1_api]
 
     text_query, id_query = replace_query(text, Re_entities, label_ent, Re_relations, label_rel, cgdata.node2id)
     return text_query, id_query, step_text
+
 
 def replace_query(responses, Re_entities, label_ent, Re_relations, label_rel, node2id):
     # 创建映射字典
@@ -257,7 +267,7 @@ def replace_query(responses, Re_entities, label_ent, Re_relations, label_rel, no
     replace_dict = dict(zip(Re_list, label_list))
 
     # 使用正则表达式查找要替换的元素
-    pattern = '|'.join(re.escape("'"+key+"'") for key in Re_list)
+    pattern = '|'.join(re.escape("'" + key + "'") for key in Re_list)
 
     def replace_match(match):
         matched_text = match.group()
@@ -268,27 +278,28 @@ def replace_query(responses, Re_entities, label_ent, Re_relations, label_rel, no
     # text_query = [re.sub(pattern, lambda x: replace_dict[x.group()], response) for response in responses]
     text_query = [re.sub(pattern, replace_match, response) for response in responses]
     # text_query = re.sub(pattern, lambda x: replace_dict[x.group()], responses)
-    
+
     # 创建映射字典
     Re_list = label_list
     # import pdb; pdb.set_trace();
-    label_list = [ node2id[node] for node in Re_list]
+    label_list = [node2id[node] for node in Re_list]
     replace_dict = dict(zip(Re_list, label_list))
 
     # 使用正则表达式查找要替换的元素
-    pattern = '|'.join(re.escape("'"+key+"'") for key in Re_list)
+    pattern = '|'.join(re.escape("'" + key + "'") for key in Re_list)
 
-    
     # id_query = [re.sub(pattern, lambda x: replace_dict[x.group()], response) for response in text_query]
     id_query = [re.sub(pattern, replace_match, response) for response in text_query]
 
     return text_query, id_query
 
+
 # def extract_query(text):
 #     function = None 
 #     pass 
 
-def getStr(x): return x if type(x)==str else str(x)
+def getStr(x): return x if type(x) == str else str(x)
+
 
 def get_parameters(responce_from_api):
     entities = []
@@ -309,10 +320,11 @@ def get_parameters(responce_from_api):
 
     return entities, relations
 
+
 def get_entitise_relations(cgdata):
     entities = set()
     relations = set()
-    for h,r,t in cgdata.triples:
+    for h, r, t in cgdata.triples:
         if h == 'row_number': continue
 
         if t == '[0]':
@@ -321,15 +333,16 @@ def get_entitise_relations(cgdata):
         else:
             entities.add(getStr(r))
             entities.add(getStr(t))
-    
-    CG_entities = [ item for item in list(entities) if item[0:6] != '[line_' and item!='']
+
+    CG_entities = [item for item in list(entities) if item[0:6] != '[line_' and item != '']
     return CG_entities, list(relations)
+
 
 # generate table prompt
 def get_schema(cgdata):
     schema_dict = dict()
-    for h,r,t in cgdata.triples:
-        if t == '[0]': continue # (line_0, relation,[0])
+    for h, r, t in cgdata.triples:
+        if t == '[0]': continue  # (line_0, relation,[0])
         # (relation, tail, head)
         if h in schema_dict:
             schema_dict[h].append(r)
@@ -352,7 +365,7 @@ def MetaQA_text2query(args, text, question, cgdata, CG_relations):
     output: query class
     """
     pattern_step = r"(Step.*)"
-    step_text = re.findall(pattern_step, text) # 得到list形式的query
+    step_text = re.findall(pattern_step, text)  # 得到list形式的query
     print(f"step_text:{step_text}")
 
     # pattern_query = r'Query\d+\s*:\s*"(.*?)"'
@@ -360,7 +373,7 @@ def MetaQA_text2query(args, text, question, cgdata, CG_relations):
     # print(f"text:{text}")
 
     pattern_query = r'Query\d+\s*:\s*"(.*?)"(\n|$)'
-    tmp_text = re.findall(pattern_query, text) # 得到list形式的query
+    tmp_text = re.findall(pattern_query, text)  # 得到list形式的query
     text = []
     for item in tmp_text:
         text.append(item[0].replace('"', "'"))
@@ -368,8 +381,8 @@ def MetaQA_text2query(args, text, question, cgdata, CG_relations):
 
     # if CG_relations == None:
     CG_entities, CG_relations = get_entitise_relations(cgdata)
-    
-    Re_entities, Re_relations = get_parameters(text) #参数提取
+
+    Re_entities, Re_relations = get_parameters(text)  # 参数提取
     print(f"Re_entities:{Re_entities}")
     print(f"Re_relations:{Re_relations}")
 
@@ -379,7 +392,7 @@ def MetaQA_text2query(args, text, question, cgdata, CG_relations):
         else:
             collection = sllm.retrieve.get_embedding_align(args.folder_path, args.retriever_align, args.chroma_dir)
             results_relation = collection.query(query_texts=Re_relations, n_results=1)
-            label_rel = [ candidate_question[0] for candidate_question in results_relation['documents']]
+            label_rel = [candidate_question[0] for candidate_question in results_relation['documents']]
 
     else:
         # retrieve relations
@@ -388,11 +401,11 @@ def MetaQA_text2query(args, text, question, cgdata, CG_relations):
         else:
             # retriever = OpenAIRetriever(CG_relations)
             retriever = GetRetriever(args, CG_relations)
-            top1_api = retriever.get_topk_candidates(1,Re_relations)
+            top1_api = retriever.get_topk_candidates(1, Re_relations)
             label_rel = [CG_relations[char[0]] for char in top1_api]
 
     text_query, id_query = replace_query(text, Re_entities, Re_entities, Re_relations, label_rel, cgdata.node2id)
-    
+
     return text_query, id_query, step_text
 
 
@@ -405,41 +418,42 @@ def WQSP_text2query(args, text, DataFormat, cgdata):
     TopicEntityID = DataFormat.TopicEntityID
 
     pattern_step = r"(Step.*)"
-    step_text = re.findall(pattern_step, text) # 得到list形式的query
+    step_text = re.findall(pattern_step, text)  # 得到list形式的query
     print(f"step_text:{step_text}")
 
     pattern_query = r'Query\d+\s*:\s*"(.*?)"'
-    text = re.findall(pattern_query, text) # 得到list形式的query
+    text = re.findall(pattern_query, text)  # 得到list形式的query
     print(f"text:{text}")
 
     _, CG_relations = get_entitise_relations(cgdata)
     # CG_entities, CG_relations = get_entitise_relations(cgdata)
-        
+
     print(CG_relations)
-    
+
     # TopicEntityName2ID
-    if TopicEntityID!= None:
+    if TopicEntityID != None:
         text[0] = re.sub(r'head_entity=\'.*?\'', f'head_entity=\'{TopicEntityID}\'', text[0])
         text[0] = re.sub(r'tail_entity=\'.*?\'', f'tail_entity=\'{TopicEntityID}\'', text[0])
 
-    Re_entities, Re_relations = get_parameters(text) #参数提取
+    Re_entities, Re_relations = get_parameters(text)  # 参数提取
     print(f"Re_entities:{Re_entities}")
     print(f"Re_relations:{Re_relations}")
-    
+
     # retrieve relations
     if Re_relations == []:
         label_rel = []
     else:
         # retriever = OpenAIRetriever(CG_relations)
         retriever = GetRetriever(args, CG_relations)
-        top1_api = retriever.get_topk_candidates(1,Re_relations)
+        top1_api = retriever.get_topk_candidates(1, Re_relations)
         label_rel = [CG_relations[char[0]] for char in top1_api]
 
     text_query, id_query = replace_query(text, Re_entities, Re_entities, Re_relations, label_rel, cgdata.node2id)
-    
+
     return text_query, id_query, step_text
 
-def TEMP_text2query(args, text, item , temp_data):
+
+def TEMP_text2query(args, text, item, temp_data):
     """translate text into formal queries
     output: query class
     """
@@ -448,11 +462,11 @@ def TEMP_text2query(args, text, item , temp_data):
     annotation = item.annotation
 
     pattern_step = r"(Step.*)"
-    step_text = re.findall(pattern_step, text) # 得到list形式的query
+    step_text = re.findall(pattern_step, text)  # 得到list形式的query
     print(f"step_text:{step_text}")
 
     pattern_query = r'Query\d+\s*:\s*"(.*?)"(\n|$)'
-    tmp_text = re.findall(pattern_query, text) # 得到list形式的query
+    tmp_text = re.findall(pattern_query, text)  # 得到list形式的query
     text = []
     for item in tmp_text:
         text.append(item[0].replace('"', "'"))
@@ -470,34 +484,33 @@ def TEMP_text2query(args, text, item , temp_data):
         res_entity_list = re.search(r'\[.*?\]', annotation).group(0)
         # 匹配 {} 部分
         annotation = re.search(r'\{.*?\}', annotation).group(0)
-        
+
         res_entity_list = ast.literal_eval(res_entity_list)
         annotation = ast.literal_eval(annotation)
-        CG_entities = [item for key,item in annotation.items() ]
+        CG_entities = [item for key, item in annotation.items()]
         CG_entities.extend(res_entity_list)
     else:
-        CG_entities = [item for key,item in annotation.items() ]
-    
+        CG_entities = [item for key, item in annotation.items()]
+
     # CG_entities = [item for key,item in annotation.items() ]
     # CG_entities.extend(res_entity_list)
 
-        
     print(f"CG_relations:{CG_relations}")
     print(f"CG_entities:{CG_entities}")
 
-    Re_entities, Re_relations = get_parameters(text) #参数提取
+    Re_entities, Re_relations = get_parameters(text)  # 参数提取
     print(f"Re_entities:{Re_entities}")
     print(f"Re_relations:{Re_relations}")
-    
+
     # retrieve relations
     if Re_relations == []:
         label_rel = []
     else:
         # retriever = OpenAIRetriever(CG_relations)
         retriever = GetRetriever(args, CG_relations)
-        top1_api = retriever.get_topk_candidates(1,Re_relations)
+        top1_api = retriever.get_topk_candidates(1, Re_relations)
         label_rel = [CG_relations[char[0]] for char in top1_api]
 
     text_query, id_query = replace_query(text, Re_entities, Re_entities, Re_relations, label_rel, temp_data.node2id)
-    
+
     return text_query, id_query, step_text

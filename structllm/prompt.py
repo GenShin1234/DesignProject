@@ -3,7 +3,7 @@ import structllm.translate2CGdata as trans2CGdata
 import json
 
 
-class kgqa_query_prompt():
+class kgqa_query_prompt:
     def __init__(self, args, question, table_data, relations, collection=None):
         self.question = question
         self.model = args.model

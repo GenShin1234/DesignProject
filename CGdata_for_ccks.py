@@ -124,7 +124,7 @@ def parse_args():
     parser = argparse.ArgumentParser(add_help=False)
 
     # setting for openai
-    parser.add_argument('--openai_url', default="https://free.gpt.ge", type=str, help='The url of openai')
+    parser.add_argument('--openai_url', default="https://api.openai.com/v1", type=str, help='The url of openai')
     parser.add_argument('--key', default="api_key.txt", type=str, help='The key of openai or path of keys')
 
     # setting for alignment retriever

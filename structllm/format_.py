@@ -117,7 +117,7 @@ def Table2CG(key, cols, vals):
 def tb_to_csv():
     file_type = ['train', 'dev', 'test'][1]
 
-    table_ = f'../../Unified_rep/WikiSQL/data/{file_type}.tables.jsonl'
+    table_ = f'../dataset/WikiSQL/data/{file_type}.tables.jsonl'
     out_dir = f'../dataset/WikiSQL_TB_csv/{file_type}/'
 
     with open(table_, 'r') as fp:
@@ -132,7 +132,7 @@ def tb_to_csv():
             table_id = table_data['id']
 
             table = np.array([table_data['header']] + table_data['rows'])
-            import pdb;
+            import pdb
             pdb.set_trace()
             np.savetxt(out_dir + f"{table_id}.csv", table, fmt="%s", delimiter="\t")
 
@@ -141,6 +141,6 @@ if __name__ == "__main__":
     # tb_to_csv()
     path = f'../dataset/WikiSQL_TB_csv/dev/1-10015132-11.csv'
     triples = csv2CG(path)
-    import pdb;
+    import pdb
 
     pdb.set_trace()

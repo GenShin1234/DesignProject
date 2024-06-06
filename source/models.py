@@ -148,7 +148,7 @@ if __name__ == '__main__':
     #     print(l)
 
     #     break
-
+    
     net = GetTextSum_GRU()
 
     with open("1.txt", "w+") as f:

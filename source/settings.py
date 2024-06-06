@@ -30,7 +30,7 @@ MAX_SOURCE_LEN = 2193
 MAX_SUMMARY_LEN = 587
 
 # 限定序列长度（长于此长度做切割，短于此长度做padding）
-SOURCE_THRESHOLD = 1800
+SOURCE_THRESHOLD = 1024
 SUMMARY_THRESHOLD = 550
 # 读取数据时的标志
 TRAIN_FALG = 0
@@ -49,15 +49,17 @@ PATTERNS_ANY = [
 ]
 
 # ------------------ 其他设置 ------------------#
-DEVICE = torch.device("cuda:0")
+# DEVICE = torch.device("cuda:0")
+DEVICE = torch.device("cpu")
 EPOCHS = 10
 BATCH_SZIE = 28
 
 # ------------------ 预训练模型设置 ------------------#
-
 # 搜索束个数
-NUM_BEAMS = 1
+NUM_BEAMS = 3
+# NUM_BEAMS = 1
+
 # 预测序列最大长度
-MAX_LEN = 590
+MAX_LEN = 500
 # 预测序列最小长度
 MIN_LEN = 30

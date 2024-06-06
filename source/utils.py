@@ -15,7 +15,7 @@ from rouge import Rouge
 import models
 
 
-def Preprocess(train_path=DATA_DIR + "train_dataset.csv", test_path=DATA_DIR + "test_dataset.csv"):
+def Preprocess(train_path=DATA_DIR + "train.csv", test_path=DATA_DIR + "test.csv"):
     """
     清理数据、划分验证集后重新保存至新文件
     """
@@ -23,7 +23,6 @@ def Preprocess(train_path=DATA_DIR + "train_dataset.csv", test_path=DATA_DIR + "
     # 数据清洗
     def _cleanData(data):
         print("数据清洗开始=========================================")
-
         clean_data = []
         for i, d in tqdm(enumerate(data)):
             res = d
@@ -43,9 +42,7 @@ def Preprocess(train_path=DATA_DIR + "train_dataset.csv", test_path=DATA_DIR + "
 
     # 将处理后的数据保存为json文件
     def _save2Json(data, mode):
-
         if mode == 2:
-
             for i in range(len(data)):
                 source = data[i].split('\t')[1].strip('\n')
                 if source != '':
@@ -53,12 +50,8 @@ def Preprocess(train_path=DATA_DIR + "train_dataset.csv", test_path=DATA_DIR + "
 
                     with open(new_test_path + str(i) + '.json', 'w+', encoding='utf-8') as f:
                         f.write(json.dumps(dict_data, ensure_ascii=False))
-
-
         else:
-
             for i in range(len(data)):
-
                 if len(data[i].split('\t')) == 3:
                     source_seg = data[i].split("\t")[1]
                     traget_seg = data[i].split("\t")[2].strip('\n')
@@ -131,13 +124,14 @@ def BuildVocabCounter(data_dir=DATA_DIR):
         summary_words = []
         source_words = []
         for i in range(n_data):
+            if i == 1940 or i == 4913 or i == 5920:
+                continue
             js_data = json.load(open(os.path.join(path, f"{i}.json"), encoding="utf-8"))
             summary = ''.join(js_data['summary']).strip()
             summary_words.extend(summary.strip().split(' '))
 
             source = ''.join(js_data['text']).strip()
             source_words.extend(source.strip().split(' '))
-
         return source_words + summary_words
 
     # print(_count_data(data_dir+"new_train"))
@@ -308,7 +302,6 @@ def Train(net: Module, lr=0.01):
     net.to(DEVICE)
     optimizer = optim.Adam(net.parameters(), lr=lr)
     loss = models.MaskedSoftmaxCELoss()
-
     # 验证集loss降到10000以下时开始保存每轮更低的参数
     min_loss = 10000
     for epoch in range(EPOCHS):
@@ -341,7 +334,7 @@ def Train(net: Module, lr=0.01):
                 val_loss.append(l.item())
 
         # 保存模型参数，秒级时间戳保证唯一性
-        if (sum(val_loss) < min_loss):
+        if sum(val_loss) < min_loss:
             min_loss = sum(val_loss)
             torch.save(net.state_dict(), PARAM_DIR + str(int(time.time())) + "_GRU.param")
             print(f"saved net with val_loss:{min_loss}")
@@ -427,39 +420,39 @@ def GenSubmisson(net, param_path, max_steps=100):
 
 
 if __name__ == '__main__':
-    Preprocess()
+    # Preprocess()
     # BuildVocabCounter()
     # MakeVocab(VOCAB_SIZE)
 
-    # with open(WORD_IDX_PATH,"rb") as f:
-    #     a=pkl.load(f)
-    # with open(IDX_WORD_PATH,"rb") as f:
-    #     b=pkl.load(f)
+    with open(WORD_IDX_PATH, "rb") as f:
+        a = pkl.load(f)
+    with open(IDX_WORD_PATH, "rb") as f:
+        b = pkl.load(f)
 
     # print(a)
     # print(b)
-    # print(ReadJson2List(os.path.join(DATA_DIR,"new_test/"),0,True))
-    # with open(WORD_IDX_PATH,"rb") as f:
-    #     w2i=pkl.load(f)
-    # # print(w2i['a'])
-    # a=TextDataset(VAL_FALG,w2i)
-    # x=a.__getitem__(1)
+    print(ReadJson2List(os.path.join(DATA_DIR, "new_test/"), 0, True))
+    with open(WORD_IDX_PATH, "rb") as f:
+        w2i = pkl.load(f)
+    # print(w2i['a'])
+    a = TextDataset(VAL_FALG, w2i)
+    x = a.__getitem__(1)
 
     # print(x)
-    # train_iter=DataLoader(TextDataset(VAL_FALG,w2i),shuffle=True,batch_size=128,num_workers=4)
-    # Train(models.GetTextSum_GRU(),0.01)
+    train_iter = DataLoader(TextDataset(VAL_FALG, w2i), shuffle=True, batch_size=128, num_workers=4)
+    Train(models.GetTextSum_GRU(), 0.01)
     # GenSubmisson()
-
+    #
     # print(
     #     TestOneSeq(
-    #     "one-third of phone users would definitely upgrade to a facebook phone - and 73 % think the phone is a ` good idea ' . news of the phone emerged this week , with sources claiming that facebook had hired ex-apple engineers to work on an ` official ' facebook phone . facebook has made several ventures into the mobile market before in partnership with manufacturers such as htc and inq - but a new phone made by ex-apple engineers is rumoured to be in production . the previous ` facebook phone ' - inq 's cloud touch - puts all of your newsfeeds , pictures and other information on a well thought-out homescreen centred around facebook . it 's not the first facebook phone to hit . the market -- the social network giant has previously partnered with inq . and htc to produce facebook-oriented handsets , including phones with a . built-in ` like ' button . details of the proposed phone are scant , but facebook is already making moves into the mobile space with a series of high-profile app acquisitions . after its $ 1 billion purchase of instagram , the social network bought location-based social app glancee and photo-sharing app lightbox . facebook 's smartphone apps have also seen constant and large-scale redesigns , with adverts more prominent with the news feed . the handset is rumoured to be set for a 2013 release . it could be a major hit -- a flash poll of 968 people conducted by myvouchercodes found that 32 % of phone users would upgrade as soon as it became available . the key to its success could be porting apps to mobile -- something facebook is already doing . separate camera and chat apps already separate off some site functions , and third-party apps will shortly be available via a facebook app store . of those polled , 57 % hoped that it would be cheaper than an iphone -- presumably supported by facebook 's advertising . those polled were then asked why they would choose to purchase a facebook phone , if and when one became available , and were asked to select all reasons that applied to them from a list of possible answers . would you ` upgrade ' to a facebook phone ? would you ` upgrade ' to a facebook phone ? now share your opinion . the top five reasons were as follows : . 44 % of people liked the idea of having their mobile phone synced with their facebook account , whilst 41 % said they wanted to be able to use facebook apps on their smartphone . mark pearson , chairman of myvouchercodes.co.uk , said , ` it will be quite exciting to see the first facebook phone when it 's released next year . '",
-    #     models.GetTextSum_GRU().to(DEVICE),
-    #     os.path.join(PARAM_DIR,"1638704899_GRU.param"),
-    #     label=" poll of 968 phone users in uk .   32 % said they would definitely upgrade to a facebook phone .   users hope it might be cheaper than iphone . "
+    #         "one-third of phone users would definitely upgrade to a facebook phone - and 73 % think the phone is a ` good idea ' . news of the phone emerged this week , with sources claiming that facebook had hired ex-apple engineers to work on an ` official ' facebook phone . facebook has made several ventures into the mobile market before in partnership with manufacturers such as htc and inq - but a new phone made by ex-apple engineers is rumoured to be in production . the previous ` facebook phone ' - inq 's cloud touch - puts all of your newsfeeds , pictures and other information on a well thought-out homescreen centred around facebook . it 's not the first facebook phone to hit . the market -- the social network giant has previously partnered with inq . and htc to produce facebook-oriented handsets , including phones with a . built-in ` like ' button . details of the proposed phone are scant , but facebook is already making moves into the mobile space with a series of high-profile app acquisitions . after its $ 1 billion purchase of instagram , the social network bought location-based social app glancee and photo-sharing app lightbox . facebook 's smartphone apps have also seen constant and large-scale redesigns , with adverts more prominent with the news feed . the handset is rumoured to be set for a 2013 release . it could be a major hit -- a flash poll of 968 people conducted by myvouchercodes found that 32 % of phone users would upgrade as soon as it became available . the key to its success could be porting apps to mobile -- something facebook is already doing . separate camera and chat apps already separate off some site functions , and third-party apps will shortly be available via a facebook app store . of those polled , 57 % hoped that it would be cheaper than an iphone -- presumably supported by facebook 's advertising . those polled were then asked why they would choose to purchase a facebook phone , if and when one became available , and were asked to select all reasons that applied to them from a list of possible answers . would you ` upgrade ' to a facebook phone ? would you ` upgrade ' to a facebook phone ? now share your opinion . the top five reasons were as follows : . 44 % of people liked the idea of having their mobile phone synced with their facebook account , whilst 41 % said they wanted to be able to use facebook apps on their smartphone . mark pearson , chairman of myvouchercodes.co.uk , said , ` it will be quite exciting to see the first facebook phone when it 's released next year . '",
+    #         models.GetTextSum_GRU().to(DEVICE),
+    #         os.path.join(PARAM_DIR, "1638704899_GRU.param"),
+    #         label=" poll of 968 phone users in uk .   32 % said they would definitely upgrade to a facebook phone .   users hope it might be cheaper than iphone . "
+    #     )
     # )
-    # )
-
+    #
     # GenSubmisson(
     #     models.GetTextSum_GRU().to(DEVICE),
-    #     os.path.join(PARAM_DIR,"1638704899_GRU.param")
-    #     )
+    #     os.path.join(PARAM_DIR, "1638704899_GRU.param")
+    # )

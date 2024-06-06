@@ -41,6 +41,7 @@ def main():
             print(e)
         print("--------------字典建立完毕--------------")
         exit(0)
+
     if args.train:
 
         try:

@@ -113,9 +113,9 @@ def TestOneSeq(net, tokenizer, text, target=None):
         max_length=SOURCE_THRESHOLD
     ).to(DEVICE)
 
-    if current_model == "t5":
-        summary_task = torch.tensor([[21603, 10]]).to(DEVICE)
-        input_tokenized = torch.cat([summary_task, input_tokenized], dim=-1).to(DEVICE)
+    # if current_model == "t5":
+    #     summary_task = torch.tensor([[21603, 10]]).to(DEVICE)
+    #     input_tokenized = torch.cat([summary_task, input_tokenized], dim=-1).to(DEVICE)
 
     summary_ids = net.generate(input_tokenized,
                                num_beams=NUM_BEAMS,
@@ -143,14 +143,15 @@ def GetTextSum_BART():
     tokenizer = BartTokenizer.from_pretrained(PARAM_DIR + "bart", output_past=True)
     net = BartForConditionalGeneration.from_pretrained(PARAM_DIR + "bart", output_past=True)
     print("bart 加载完毕")
-    return (net.to(DEVICE), tokenizer)
+    return net.to(DEVICE), tokenizer
 
 
 def GetTextSum_Pegasus():
     tokenizer = PegasusTokenizer.from_pretrained(PARAM_DIR + "pegasus")
     net = PegasusForConditionalGeneration.from_pretrained(PARAM_DIR + "pegasus")
+    # net = PegasusForConditionalGeneration.from_pretrained("pegasus", token='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')
     print("pegasus 加载完毕")
-    return (net.to(DEVICE), tokenizer)
+    return net.to(DEVICE), tokenizer
 
 
 def GetPModel(name: str):
@@ -190,6 +191,7 @@ def GenSub(net, tokenizer, param_path=None):
     for i in tqdm(range(1000)):
         text = ReadJson(i, DATA_DIR + "new_test", True)
         summary = TestOneSeq(net, tokenizer, text)[0]
+        summary = summary.replace('\t ', '\t')
         res.append([str(i), summary])
 
     with open(os.path.join(DATA_DIR, 'submission.csv'), 'w+', newline="", encoding='utf-8') as csvfile:
@@ -198,27 +200,27 @@ def GenSub(net, tokenizer, param_path=None):
 
 
 if __name__ == '__main__':
-    net, tokenizer = GetPModel("pegasus")
-    # res=tokenizer(
-    #     ["hello world","hi"],
-    #     return_tensors="pt",
-    #     padding='longest',
-    #     max_length=MAX_LEN,
-    #     truncation=True,
-    #     )
+    net, tokenizer = GetPModel("bart")
+    res = tokenizer(
+        ["hello world", "hi"],
+        return_tensors="pt",
+        padding='longest',
+        max_length=MAX_LEN,
+        truncation=True,
+    )
     # print(res)
 
-    # print(TestOneSeq(
-    #     net,tokenizer,
-    # "one-third of phone users would definitely upgrade to a facebook phone - and 73 % think the phone is a ` good idea ' . news of the phone emerged this week , with sources claiming that facebook had hired ex-apple engineers to work on an ` official ' facebook phone . facebook has made several ventures into the mobile market before in partnership with manufacturers such as htc and inq - but a new phone made by ex-apple engineers is rumoured to be in production . the previous ` facebook phone ' - inq 's cloud touch - puts all of your newsfeeds , pictures and other information on a well thought-out homescreen centred around facebook . it 's not the first facebook phone to hit . the market -- the social network giant has previously partnered with inq . and htc to produce facebook-oriented handsets , including phones with a . built-in ` like ' button . details of the proposed phone are scant , but facebook is already making moves into the mobile space with a series of high-profile app acquisitions . after its $ 1 billion purchase of instagram , the social network bought location-based social app glancee and photo-sharing app lightbox . facebook 's smartphone apps have also seen constant and large-scale redesigns , with adverts more prominent with the news feed . the handset is rumoured to be set for a 2013 release . it could be a major hit -- a flash poll of 968 people conducted by myvouchercodes found that 32 % of phone users would upgrade as soon as it became available . the key to its success could be porting apps to mobile -- something facebook is already doing . separate camera and chat apps already separate off some site functions , and third-party apps will shortly be available via a facebook app store . of those polled , 57 % hoped that it would be cheaper than an iphone -- presumably supported by facebook 's advertising . those polled were then asked why they would choose to purchase a facebook phone , if and when one became available , and were asked to select all reasons that applied to them from a list of possible answers . would you ` upgrade ' to a facebook phone ? would you ` upgrade ' to a facebook phone ? now share your opinion . the top five reasons were as follows : . 44 % of people liked the idea of having their mobile phone synced with their facebook account , whilst 41 % said they wanted to be able to use facebook apps on their smartphone . mark pearson , chairman of myvouchercodes.co.uk , said , ` it will be quite exciting to see the first facebook phone when it 's released next year . '",
-    # "poll of 968 phone users in uk .   32 % said they would definitely upgrade to a facebook phone .   users hope it might be cheaper than iphone . "
-    # ))
-    # GenSub(net,tokenizer)
-
-    # opt=AdamW(net.parameters())
+    print(TestOneSeq(
+        net, tokenizer,
+        "one-third of phone users would definitely upgrade to a facebook phone - and 73 % think the phone is a ` good idea ' . news of the phone emerged this week , with sources claiming that facebook had hired ex-apple engineers to work on an ` official ' facebook phone . facebook has made several ventures into the mobile market before in partnership with manufacturers such as htc and inq - but a new phone made by ex-apple engineers is rumoured to be in production . the previous ` facebook phone ' - inq 's cloud touch - puts all of your newsfeeds , pictures and other information on a well thought-out homescreen centred around facebook . it 's not the first facebook phone to hit . the market -- the social network giant has previously partnered with inq . and htc to produce facebook-oriented handsets , including phones with a . built-in ` like ' button . details of the proposed phone are scant , but facebook is already making moves into the mobile space with a series of high-profile app acquisitions . after its $ 1 billion purchase of instagram , the social network bought location-based social app glancee and photo-sharing app lightbox . facebook 's smartphone apps have also seen constant and large-scale redesigns , with adverts more prominent with the news feed . the handset is rumoured to be set for a 2013 release . it could be a major hit -- a flash poll of 968 people conducted by myvouchercodes found that 32 % of phone users would upgrade as soon as it became available . the key to its success could be porting apps to mobile -- something facebook is already doing . separate camera and chat apps already separate off some site functions , and third-party apps will shortly be available via a facebook app store . of those polled , 57 % hoped that it would be cheaper than an iphone -- presumably supported by facebook 's advertising . those polled were then asked why they would choose to purchase a facebook phone , if and when one became available , and were asked to select all reasons that applied to them from a list of possible answers . would you ` upgrade ' to a facebook phone ? would you ` upgrade ' to a facebook phone ? now share your opinion . the top five reasons were as follows : . 44 % of people liked the idea of having their mobile phone synced with their facebook account , whilst 41 % said they wanted to be able to use facebook apps on their smartphone . mark pearson , chairman of myvouchercodes.co.uk , said , ` it will be quite exciting to see the first facebook phone when it 's released next year . '",
+        "poll of 968 phone users in uk .   32 % said they would definitely upgrade to a facebook phone .   users hope it might be cheaper than iphone . "
+    ))
+    GenSub(net, tokenizer)
+    #
+    # opt = AdamW(net.parameters())
     # opt.step()
 
-    # FineTune(net,tokenizer)
+    # FineTune(net, tokenizer)
 
-    with open("1.txt", "w+") as f:
-        f.write(str(net))
+    # with open("1.txt", "w+") as f:
+    #     f.write(str(net))

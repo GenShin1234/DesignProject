@@ -5,6 +5,7 @@ import pretrained_models as pm
 
 
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-p", "--preprocess", help="预处理数据", action="store_true")
 parser.add_argument("-b", "--build", help="建立词频表", action="store_true")
@@ -41,6 +42,7 @@ def main():
             print(e)
         print("--------------字典建立完毕--------------")
         exit(0)
+
     if args.train:
 
         try:

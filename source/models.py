@@ -6,6 +6,7 @@ from settings import *
 import utils
 
 
+
 class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
     """带遮蔽的softmax交叉熵损失函数"""
 
@@ -148,7 +149,7 @@ if __name__ == '__main__':
     #     print(l)
 
     #     break
-
+    
     net = GetTextSum_GRU()
 
     with open("1.txt", "w+") as f:

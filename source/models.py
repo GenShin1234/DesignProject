@@ -6,6 +6,7 @@ from settings import *
 import utils
 
 
+
 class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
     """带遮蔽的softmax交叉熵损失函数"""
 

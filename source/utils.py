@@ -285,11 +285,11 @@ def GetRouge(pred, label):
 
 
 # 将数据转换为成batch的Tensor，win平台有bug，多进程不能写在函数里
-with open(WORD_IDX_PATH, "rb") as f:
-    w2i = pkl.load(f)
-train_iter = DataLoader(TextDataset(TRAIN_FALG, w2i), shuffle=True, batch_size=BATCH_SZIE, num_workers=8)
-val_iter = DataLoader(TextDataset(VAL_FALG, w2i), shuffle=False, batch_size=BATCH_SZIE, num_workers=4)
-test_iter = DataLoader(TextDataset(TEST_FALG, w2i), shuffle=False, batch_size=1)
+# with open(WORD_IDX_PATH, "rb") as f:
+#     w2i = pkl.load(f)
+# train_iter = DataLoader(TextDataset(TRAIN_FALG, w2i), shuffle=True, batch_size=BATCH_SZIE, num_workers=8)
+# val_iter = DataLoader(TextDataset(VAL_FALG, w2i), shuffle=False, batch_size=BATCH_SZIE, num_workers=4)
+# test_iter = DataLoader(TextDataset(TEST_FALG, w2i), shuffle=False, batch_size=1)
 
 
 def Train(net: Module, lr=0.01):

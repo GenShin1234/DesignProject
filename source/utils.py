@@ -423,6 +423,7 @@ if __name__ == '__main__':
     # Preprocess()
     # BuildVocabCounter()
     # MakeVocab(VOCAB_SIZE)
+
     with open(WORD_IDX_PATH, "rb") as f:
         a = pkl.load(f)
     with open(IDX_WORD_PATH, "rb") as f:
@@ -455,4 +456,3 @@ if __name__ == '__main__':
     #     models.GetTextSum_GRU().to(DEVICE),
     #     os.path.join(PARAM_DIR, "1638704899_GRU.param")
     # )
-

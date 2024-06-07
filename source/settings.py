@@ -12,7 +12,6 @@ WORD_IDX_PATH = "../dataset/word2idx.pkl"
 # 数字->单词
 IDX_WORD_PATH = "../dataset/idx2word.pkl"
 
-
 # ------------------ 词典设置 ------------------#
 # 特殊符号
 PAD_WORD = '<pad>'
@@ -48,6 +47,7 @@ PATTERNS_ONCE = [
 PATTERNS_ANY = [
     "``|''"
 ]
+
 # ------------------ 其他设置 ------------------#
 # DEVICE = torch.device("cuda:0")
 DEVICE = torch.device("cpu")
@@ -56,10 +56,10 @@ BATCH_SZIE = 28
 
 # ------------------ 预训练模型设置 ------------------#
 # 搜索束个数
-NUM_BEAMS = 2
+NUM_BEAMS = 3
 # NUM_BEAMS = 1
 
 # 预测序列最大长度
-MAX_LEN = 590
+MAX_LEN = 500
 # 预测序列最小长度
 MIN_LEN = 30

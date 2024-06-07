@@ -173,7 +173,7 @@ def GetPModel(name: str):
 def ReadJson(i, dir, test=False):
     """读取单个json文件（一个样本）"""
     import json
-    
+
     js_data = json.load(open(os.path.join(dir, f"{i}.json"), encoding="utf-8"))
     if test:
         return js_data["text"]
@@ -199,7 +199,6 @@ def GenSub(net, tokenizer, param_path=None):
         writer.writerows(res)
 
 
-
 if __name__ == '__main__':
     net, tokenizer = GetPModel("bart")
     res = tokenizer(
@@ -217,11 +216,11 @@ if __name__ == '__main__':
         "poll of 968 phone users in uk .   32 % said they would definitely upgrade to a facebook phone .   users hope it might be cheaper than iphone . "
     ))
     GenSub(net, tokenizer)
+    #
+    # opt = AdamW(net.parameters())
+    # opt.step()
 
-    opt = AdamW(net.parameters())
-    opt.step()
+    # FineTune(net, tokenizer)
 
-    FineTune(net, tokenizer)
-
-    with open("1.txt", "w+") as f:
-        f.write(str(net))
+    # with open("1.txt", "w+") as f:
+    #     f.write(str(net))

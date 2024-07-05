@@ -26,9 +26,9 @@ def Preprocess(train_path=DATA_DIR + "train.csv", test_path=DATA_DIR + "test.csv
         clean_data = []
         for i, d in tqdm(enumerate(data)):
             res = d
-            for pat in PATTERNS_ONCE:
+            for pat in PATTERNS_ONCE: #正则表达式模式列表
                 if "\t" in pat:
-                    res = re.sub(pat, "\t", res, 1)
+                    res = re.sub(pat, "\t", res, 1)  # 只替换每个模式在数据中出现的第一次
                 else:
                     res = re.sub(pat, "", res, 1)
 
@@ -49,7 +49,7 @@ def Preprocess(train_path=DATA_DIR + "train.csv", test_path=DATA_DIR + "test.csv
                     dict_data = {"text": source, "summary": 'no summary'}  # 测试集没有参考摘要
 
                     with open(new_test_path + str(i) + '.json', 'w+', encoding='utf-8') as f:
-                        f.write(json.dumps(dict_data, ensure_ascii=False))
+                        f.write(json.dumps(dict_data, ensure_ascii=False)) # 不会转义非ASCII字符
         else:
             for i in range(len(data)):
                 if len(data[i].split('\t')) == 3:
@@ -108,7 +108,7 @@ def CountFiles(path):
     '''
     matcher = re.compile(r'[0-9]+\.json')
     match = lambda name: bool(matcher.match(name))
-    names = os.listdir(path)
+    names = os.listdir(path) # 路径 path 下的所有文件和目录的名称
     n_data = len(list(filter(match, names)))
     return n_data
 
@@ -250,13 +250,25 @@ def PaddingSeq(line, threshold):
     return line + [PAD_NUM] * (threshold - len(line)), p_len
 
 
+# def ReadJson2List(dir, i, label=False):
+#     """读取单个json文件（一个样本），并按空格分割转换成列表"""
+#
+#     js_data = json.load(open(os.path.join(dir, f"{i}.json"), encoding="utf-8"))
+#     if label:
+#         return js_data["summary"].split(" ")
+#     return js_data["text"].split(" ")
+
 def ReadJson2List(dir, i, label=False):
     """读取单个json文件（一个样本），并按空格分割转换成列表"""
+    try:
+        js_data = json.load(open(os.path.join(dir, f"{i}.json"), encoding="utf-8"))
+        if label:
+            return js_data["summary"].split(" ")
+        return js_data["text"].split(" ")
+    except FileNotFoundError:
+        print(f"File {i}.json not found in directory {dir}. Skipping.")
+        return []  # 或者返回其他适当的默认值
 
-    js_data = json.load(open(os.path.join(dir, f"{i}.json"), encoding="utf-8"))
-    if label:
-        return js_data["summary"].split(" ")
-    return js_data["text"].split(" ")
 
 
 def GetRouge(pred, label):
@@ -279,28 +291,29 @@ def GetRouge(pred, label):
 
 
 # 将数据转换为成batch的Tensor，win平台有bug，多进程不能写在函数里
-# with open(WORD_IDX_PATH, "rb") as f:
-#     w2i = pkl.load(f)
-# train_iter = DataLoader(TextDataset(TRAIN_FALG, w2i), shuffle=True, batch_size=BATCH_SZIE, num_workers=8)
-# val_iter = DataLoader(TextDataset(VAL_FALG, w2i), shuffle=False, batch_size=BATCH_SZIE, num_workers=4)
-# test_iter = DataLoader(TextDataset(TEST_FALG, w2i), shuffle=False, batch_size=1)
+with open(WORD_IDX_PATH, "rb") as f:
+    w2i = pkl.load(f)
+train_iter = DataLoader(TextDataset(TRAIN_FALG, w2i), shuffle=True, batch_size=BATCH_SZIE, num_workers=8)
+val_iter = DataLoader(TextDataset(VAL_FALG, w2i), shuffle=False, batch_size=BATCH_SZIE, num_workers=4)
+test_iter = DataLoader(TextDataset(TEST_FALG, w2i), shuffle=False, batch_size=1)
 
 
 def Train(net: Module, lr=0.01):
     """训练序列到序列模型。"""
     from tqdm import tqdm
 
-    def xavier_init_weights(m):
+    def xavier_init_weights(m): # 初始化神经网络的权重
         if type(m) == nn.Linear:
-            nn.init.xavier_uniform_(m.weight)
+            nn.init.xavier_uniform_(m.weight) # 初始化线性层的权重
         if type(m) == nn.GRU:
-            for param in m._flat_weights_names:
+            for param in m._flat_weights_names: # 遍历GRU层的所有参数
                 if "weight" in param:
                     nn.init.xavier_uniform_(m._parameters[param])
 
     net.apply(xavier_init_weights)
-    net.to(DEVICE)
+    net.to(DEVICE) # 神经网络模型移动到指定的设备
     optimizer = optim.Adam(net.parameters(), lr=lr)
+    #optim.Adam表示使用Adam优化器，net.parameters()表示神经网络的权重参数，lr表示学习率，用于控制权重更新的速度
     loss = models.MaskedSoftmaxCELoss()
     # 验证集loss降到10000以下时开始保存每轮更低的参数
     min_loss = 10000
@@ -313,9 +326,8 @@ def Train(net: Module, lr=0.01):
             (enc_X, enc_x_l), (dec_x, dec_x_l), (y, y_l) = [(x[0].to(DEVICE), x[1].to(DEVICE)) for x in batch]
 
             pred, _ = net(enc_X, dec_x, enc_x_l)
-            l = loss(pred, y, y_l).sum()
-            l.backward()
-
+            l = loss(pred, y, y_l).sum() # 计算损失值的和
+            l.backward() # 计算梯度
             optimizer.step()
             optimizer.zero_grad()
 
@@ -388,18 +400,20 @@ def GenSubmisson(net, param_path, max_steps=100):
     import csv
     with open(IDX_WORD_PATH, "rb") as f:
         i2w = pkl.load(f)
-
+    # 将一个预训练的模型参数文件（param_path）加载到当前正在使用的网络（net）中
     net.load_state_dict(torch.load(param_path))
     net.eval()
     res = []
     count = 0
     for enc_X, enc_X_l in tqdm(test_iter):
         enc_X, enc_X_l = enc_X.to(DEVICE), enc_X_l.to(DEVICE)
-
+        # 创建一个张量，表示一个序列的开始
         dec_X = torch.unsqueeze(
             torch.tensor([BOS_NUM], dtype=torch.long, device=DEVICE), dim=0
         )
+        # 使用神经网络的编码器（encoder）对输入数据进行编码。
         enc_outputs = net.encoder(enc_X, enc_X_l)
+        # 初始化解码器的状态
         dec_state = net.decoder.init_state(enc_outputs, enc_X_l)
 
         output_seq, attention_weight_seq = [], []
@@ -424,23 +438,23 @@ if __name__ == '__main__':
     # BuildVocabCounter()
     # MakeVocab(VOCAB_SIZE)
 
-    with open(WORD_IDX_PATH, "rb") as f:
-        a = pkl.load(f)
-    with open(IDX_WORD_PATH, "rb") as f:
-        b = pkl.load(f)
-
+    # with open(WORD_IDX_PATH, "rb") as f:
+    #     a = pkl.load(f)
+    # with open(IDX_WORD_PATH, "rb") as f:
+    #     b = pkl.load(f)
+    #
     # print(a)
     # print(b)
-    print(ReadJson2List(os.path.join(DATA_DIR, "new_test/"), 0, True))
-    with open(WORD_IDX_PATH, "rb") as f:
-        w2i = pkl.load(f)
+    # print(ReadJson2List(os.path.join(DATA_DIR, "new_test/"), 0, True))
+    # with open(WORD_IDX_PATH, "rb") as f:
+    #     w2i = pkl.load(f)
     # print(w2i['a'])
-    a = TextDataset(VAL_FALG, w2i)
-    x = a.__getitem__(1)
-
+    # a = TextDataset(VAL_FALG, w2i)
+    # x = a.__getitem__(1)
+    #
     # print(x)
-    train_iter = DataLoader(TextDataset(VAL_FALG, w2i), shuffle=True, batch_size=128, num_workers=4)
-    Train(models.GetTextSum_GRU(), 0.01)
+    # train_iter = DataLoader(TextDataset(VAL_FALG, w2i), shuffle=True, batch_size=128, num_workers=4)
+    # Train(models.GetTextSum_GRU(), 0.01)
     # GenSubmisson()
     #
     # print(
@@ -452,7 +466,37 @@ if __name__ == '__main__':
     #     )
     # )
     #
+
+    # with open(WORD_IDX_PATH, "rb") as f:
+    #     w2i = pkl.load(f)
+    # print(w2i)
+    # # 创建数据加载器
+    # train_iter = DataLoader(TextDataset(TRAIN_FALG, w2i), shuffle=True, batch_size=BATCH_SZIE, num_workers=4)
+    # val_iter = DataLoader(TextDataset(VAL_FALG, w2i), shuffle=False, batch_size=BATCH_SZIE, num_workers=4)
+    #
+    # # 初始化模型
+    net = models.GetTextSum_GRU().to(DEVICE)
+
+
+    # 开始训练
+    Train(net, lr=0.01)
+
+    # with open(WORD_IDX_PATH, "rb") as f:
+    #     w2i = pkl.load(f)
+    #
+    #     # 创建数据加载器
+    # test_iter = DataLoader(TextDataset(TEST_FALG, w2i), shuffle=False, batch_size=1)
+    #
+    # # 初始化模型
+    # net = models.GetTextSum_GRU().to(DEVICE)
+    #
+    # # 指定模型参数文件路径
+    # param_path = os.path.join(PARAM_DIR, "1720104706_GRU.param")
+    #
+    # # 生成提交文件
+    # GenSubmisson(net, param_path)
+
     # GenSubmisson(
     #     models.GetTextSum_GRU().to(DEVICE),
-    #     os.path.join(PARAM_DIR, "1638704899_GRU.param")
+    #     os.path.join(PARAM_DIR, "1720104706_GRU.param")
     # )

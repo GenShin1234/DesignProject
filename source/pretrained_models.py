@@ -9,29 +9,34 @@ from torch.utils.data.dataset import TensorDataset
 from torch.utils.data.dataloader import DataLoader
 from torch.nn.modules.module import Module
 
-current_model = ""
+current_model = "" # 存储当前使用的模型类型
 
-
+# 将输入文本和摘要转换为 PyTorch 张量，用于模型训练和评估
 def ToTensor(texts, summaries, tokenizer):
     task_prefix = "summarize: "
+    # 为每个输入文本添加一个任务前缀 进行编码
     encoding = tokenizer([task_prefix + sequence for sequence in texts],
-                         padding='longest',
-                         max_length=SOURCE_THRESHOLD,
-                         truncation=True,
-                         return_tensors="pt")
+                         padding='longest',  # 对所有序列进行填充，使得最长的序列长度一致
+                         max_length=SOURCE_THRESHOLD,  # 序列长度限制
+                         truncation=True,  # 序列超出 max_length，则进行截断
+                         return_tensors="pt")  # 返回 PyTorch 张量
     input_ids, attention_mask = encoding.input_ids, encoding.attention_mask
-
+    # 对 summaries 中的每个摘要进行编码
     target_encoding = tokenizer(summaries,
                                 padding='longest',
                                 max_length=SUMMARY_THRESHOLD,
                                 truncation=True)
     labels = target_encoding.input_ids
+    # 填充的 ID 不应该参与损失计算
     labels = [(i if i != tokenizer.pad_token_id else -100) for i in labels]
-    labels = torch.tensor(labels)
+    labels = torch.tensor(labels) # 将标签列表转换为 PyTorch 张量
 
     return TensorDataset(input_ids, attention_mask, labels)
 
-
+# 微调预训练模型
+"""
+读取训练和验证数据集，并使用 DataLoader 进行批量处理，然后进行模型训练和验证。
+"""
 def FineTune(net: Module, tokenizer):
     '''微调'''
 
@@ -39,6 +44,7 @@ def FineTune(net: Module, tokenizer):
     tset_summaries = []
     vset_texts = []
     vset_summaries = []
+    # 计算训练和验证数据集的大小
     tset_len = CountFiles(DATA_DIR + "new_train")
     vset_len = CountFiles(DATA_DIR + "new_val")
     for i in range(tset_len):
@@ -50,7 +56,7 @@ def FineTune(net: Module, tokenizer):
         vset_texts.append(text)
         vset_summaries.append(summary)
     print("训练数据已读入内存...")
-
+    # 使用 ToTensor 函数将训练和验证数据转换为张量格式，然后使用 DataLoader 类将数据打包成批处理格式。
     train_iter = DataLoader(
         ToTensor(tset_texts, tset_summaries, tokenizer),
         batch_size=BATCH_SZIE,
@@ -67,7 +73,7 @@ def FineTune(net: Module, tokenizer):
     print("minibatch已生成...")
 
     print("开始训练模型...")
-    opt = AdamW(net.parameters())
+    opt = AdamW(net.parameters()) # 用于更新模型参数
     from tqdm import tqdm
     import time
     min_loss = 10
@@ -83,10 +89,10 @@ def FineTune(net: Module, tokenizer):
             opt.zero_grad()
             with torch.no_grad():
                 train_loss.append(l.item())
-
+        # 在训练一个 epoch 后，清空 GPU 缓存，将模型设置为评估模式
         torch.cuda.empty_cache()
         net.eval()
-        with torch.no_grad():
+        with torch.no_grad():  # 使用 torch.no_grad() 来避免计算梯度，从而节省 GPU 资源
             for batch in tqdm(val_iter):
                 input_ids, attention_mask, labels = [x.to(DEVICE) for x in batch]
                 l = net(input_ids=input_ids, attention_mask=attention_mask, labels=labels).loss
@@ -117,20 +123,22 @@ def TestOneSeq(net, tokenizer, text, target=None):
     #     summary_task = torch.tensor([[21603, 10]]).to(DEVICE)
     #     input_tokenized = torch.cat([summary_task, input_tokenized], dim=-1).to(DEVICE)
 
+    # 使用模型的 generate 方法生成摘要
     summary_ids = net.generate(input_tokenized,
-                               num_beams=NUM_BEAMS,
-                               no_repeat_ngram_size=3,
-                               min_length=MIN_LEN,
+                               num_beams=NUM_BEAMS, # 用于束搜索的束数量
+                               no_repeat_ngram_size=3, # 防止生成重复的 n-gram
+                               min_length=MIN_LEN,  # 生成摘要的最小长度
                                max_length=MAX_LEN,
-                               early_stopping=True)
+                               early_stopping=True) # 生成器会在遇到一个 EOS 标记时停止生成
+    # 从生成的 summary_ids 中提取输出摘要。tokenizer.decode 方法将 Token ID 转换回文本。
     output = [tokenizer.decode(g, skip_special_tokens=True, clean_up_tokenization_spaces=False) for g in summary_ids]
     score = -1
     if target is not None:
-        score = GetRouge(output[0], target)
+        score = GetRouge(output[0], target) # 输出摘要与目标摘要之间的 ROUGE 分数
     return output[0], score
 
 
-# t5
+# 加载 T5 模型和分词器
 def GetTextSum_T5(name):
     tokenizer = T5Tokenizer.from_pretrained(PARAM_DIR + name)
     net = T5ForConditionalGeneration.from_pretrained(PARAM_DIR + name)
@@ -138,14 +146,14 @@ def GetTextSum_T5(name):
     return net.to(DEVICE), tokenizer
 
 
-# bart
+# 函数加载 BART 模型和分词器。
 def GetTextSum_BART():
     tokenizer = BartTokenizer.from_pretrained(PARAM_DIR + "bart", output_past=True)
     net = BartForConditionalGeneration.from_pretrained(PARAM_DIR + "bart", output_past=True)
     print("bart 加载完毕")
     return net.to(DEVICE), tokenizer
 
-
+# 加载 Pegasus 模型和分词器
 def GetTextSum_Pegasus():
     tokenizer = PegasusTokenizer.from_pretrained(PARAM_DIR + "pegasus")
     net = PegasusForConditionalGeneration.from_pretrained(PARAM_DIR + "pegasus")
@@ -153,7 +161,7 @@ def GetTextSum_Pegasus():
     print("pegasus 加载完毕")
     return net.to(DEVICE), tokenizer
 
-
+# 根据名称加载不同的预训练模型和分词器
 def GetPModel(name: str):
     global current_model
     name = name.lower()
@@ -169,7 +177,7 @@ def GetPModel(name: str):
     else:
         raise Exception("该模型未实现！")
 
-
+# 从给定的目录中读取 JSON 文件，并返回文本和摘要
 def ReadJson(i, dir, test=False):
     """读取单个json文件（一个样本）"""
     import json
@@ -179,7 +187,7 @@ def ReadJson(i, dir, test=False):
         return js_data["text"]
     return js_data["text"], js_data["summary"]
 
-
+# 生成一个 submission 包含模型的预测摘要
 def GenSub(net, tokenizer, param_path=None):
     """生成submission.csv"""
     import csv
@@ -187,7 +195,7 @@ def GenSub(net, tokenizer, param_path=None):
 
     if param_path is not None:
         net.load_state_dict(torch.load(param_path))
-    res = []
+    res = [] # 存储生成的摘要
     for i in tqdm(range(1000)):
         text = ReadJson(i, DATA_DIR + "new_test", True)
         summary = TestOneSeq(net, tokenizer, text)[0]

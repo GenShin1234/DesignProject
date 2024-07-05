@@ -60,6 +60,6 @@ NUM_BEAMS = 3
 # NUM_BEAMS = 1
 
 # 预测序列最大长度
-MAX_LEN = 500
+MAX_LEN = 550
 # 预测序列最小长度
-MIN_LEN = 30
+MIN_LEN = 40

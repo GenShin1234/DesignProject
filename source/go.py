@@ -6,11 +6,11 @@ import pretrained_models as pm
 
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-p", "--preprocess", help="预处理数据", action="store_true")
+parser = argparse.ArgumentParser() # 用于解析命令行参数
+parser.add_argument("-p", "--preprocess", help="预处理数据", action="store_true") # 指示是否进行数据预处理
 parser.add_argument("-b", "--build", help="建立词频表", action="store_true")
 parser.add_argument("-m", "--make", help="建立词典", action="store_true")
-parser.add_argument("-t", "--train", help="训练", type=str)
+parser.add_argument("-t", "--train", help="训练", type=str) # 用于指定训练模型的类型。
 parser.add_argument("-f", "--fine_tune", help="微调", type=str)
 parser.add_argument("-g", "--gen", help="生成submission", nargs=2, type=str)
 
